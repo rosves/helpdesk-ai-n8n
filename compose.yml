@@ -1,0 +1,63 @@
+services:
+  n8n:
+    image: docker.io/n8nio/n8n:2.44.5
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    env_file: .env
+    environment:
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+    volumes:
+      - ./n8n:/home/node/.n8n
+
+  baserow:
+    container_name: baserow
+    image: baserow/baserow:2.4.3
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env
+    environment:
+      - BASEROW_PUBLIC_URL=${PUBLIC_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_HOST=baserow-db
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=${DATABASE_NAME}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+    depends_on:
+      - baserow-db
+    volumes:
+      - baserow_data:/baserow/data
+
+  baserow-db:
+    image: postgres:15.3-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    volumes:
+      - baserow_db_data:/var/lib/postgresql/data
+
+  mailpit:
+    image: axllent/mailpit:v1.34.0
+    container_name: mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    volumes:
+      - mailpit_data:/data
+    environment:
+      - MP_MAX_MESSAGES=5000
+      - MP_DATABASE=/data/mailpit.db
+      - MP_SMTP_AUTH_ACCEPT_ANY=1
+      - MP_SMTP_AUTH_ALLOW_INSECURE=1
+
+volumes:
+  baserow_data:
+  baserow_db_data:
+  n8n_data:
+  mailpit_data:
